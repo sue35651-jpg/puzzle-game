@@ -2171,7 +2171,7 @@ function selMode(btn) {
   document.getElementById('arr-diff-card').style.display    = isArrange ? 'block' : 'none';
   document.getElementById('normal-type-card').style.display = (isSeq||isArrange) ? 'none' : 'block';
   document.getElementById('normal-diff-card').style.display = (isSeq||isArrange) ? 'none' : 'block';
-  document.getElementById('row-range').style.display        = (isSeq||isClassic||isArrange) ? 'none' : 'flex';
+  document.getElementById('row-range').style.display        = (isSeq||isArrange) ? 'none' : 'flex';
   // 똑같이배치하기는 유형 선택이 별도가 아닌 일반 유형 카드 사용
   if(isArrange){
     document.getElementById('normal-type-card').style.display='block';
