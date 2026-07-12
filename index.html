@@ -2186,7 +2186,10 @@ function selMode(btn) {
 
   // 모드 전환 시 현재 선택된 유형 버튼 기준으로 S.type 재동기화
   // (카드매칭 ↔ 클래식은 data-type/data-classic-type 값이 서로 다름 — 예: colors ↔ pattern_colors)
-  const curTypeBtn = document.querySelector('.type-btn.sel');
+  // #normal-type-card로 범위를 한정해야 함: 범위 지정 없이 .type-btn.sel만 찾으면
+  // 순서맞추기 유형 카드(seq-type-card)의 선택된 버튼(예: "크기", data-type 속성 없음)이
+  // DOM 순서상 먼저 잡혀 S.type이 undefined가 되고, 이후 POOLS[S.type]에서 크래시가 남
+  const curTypeBtn = document.querySelector('#normal-type-card .type-btn.sel');
   if (curTypeBtn) {
     S.type = (isClassic && curTypeBtn.dataset.classicType)
       ? curTypeBtn.dataset.classicType
@@ -2284,7 +2287,7 @@ function startGame() {
     document.getElementById('arrangeArea').style.display = 'flex';
     requestAnimationFrame(() => requestAnimationFrame(() => buildArrangeMode()));
   } else if (S.mode === 'card') {
-    const pool = shuffle([...POOLS[S.type]]);
+    const pool = shuffle([...(POOLS[S.type]||POOLS.shapes)]);
     const cardMax = CARD_MAX[S.type] || 20;
     total = Math.min(S.pieces, pool.length, cardMax);
     gameItems = pool.slice(0, total);
@@ -2411,7 +2414,7 @@ function dragStart(e) {
 
   const g=document.createElement('div'); g.className='ghost';
   g.style.cssText=`width:${sz}px;height:${sz}px;left:${r.left}px;top:${r.top}px;background:rgba(255,255,255,0.92);border:2.5px solid rgba(99,102,241,0.6);box-shadow:0 8px 32px rgba(99,102,241,0.25);`;
-  g.innerHTML=mkSVG(POOLS[S.type].find(x=>x.id===p.dataset.id).key, sz*0.88);
+  g.innerHTML=mkSVG((POOLS[S.type]||POOLS.shapes).find(x=>x.id===p.dataset.id).key, sz*0.88);
   document.body.appendChild(g);
   p.style.opacity='0.2';
   drag={p,g,ox,oy,sz,id:p.dataset.id,mode:'card'};
@@ -2461,7 +2464,7 @@ function dragEnd(e) {
     const d=Math.hypot(cx-(r.left+r.width/2), cy-(r.top+r.height/2));
     if(d<thr && sl.dataset.id===id) {
       ok=true;
-      const item=POOLS[S.type].find(x=>x.id===id);
+      const item=(POOLS[S.type]||POOLS.shapes).find(x=>x.id===id);
       sl.classList.remove('near'); sl.classList.add('done');
       sl.innerHTML=mkSVG(item.key,sz*0.9);
       p.classList.add('placed'); placed++;
@@ -3300,6 +3303,39 @@ const SEQ_SHAPES=['sh_square','sh_circle','sh_triangle','sh_diamond',
                   'sh_heart','sh_star5','sh_pentagon','sh_hexagon',
                   'sh_star4','sh_cross','sh_oval','sh_octagon'];
 
+// 높이 모드 전용: 입체 기둥(3D 막대) 색상 테마 — 세션마다 로테이션
+const BAR3D_THEMES=[
+  {front:'#2dd4bf',side:'#0d9488',top:'#5eead4'}, // 청록
+  {front:'#818cf8',side:'#4f46e5',top:'#a5b4fc'}, // 인디고
+  {front:'#fb923c',side:'#c2410c',top:'#fed7aa'}, // 주황
+  {front:'#f472b6',side:'#db2777',top:'#fbcfe8'}, // 분홍
+  {front:'#4ade80',side:'#15803d',top:'#bbf7d0'}, // 초록
+  {front:'#60a5fa',side:'#1d4ed8',top:'#bfdbfe'}, // 파랑
+];
+
+// ── 3D 막대(기둥) SVG 생성: 폭·깊이는 항상 고정, 높이(hFrac)만 값에 따라 변화 ──
+// 도형을 통째로 늘려 찌그러뜨리는 대신, 같은 정사각형 박스 안에서 기둥의 실제 높이만 다르게 그려
+// "크기"가 아닌 "높이" 개념이 시각적으로 명확히 구분되도록 함
+function make3DBarSVG(hFrac, boxPx, theme){
+  const t = theme || BAR3D_THEMES[0];
+  const f = Math.max(0.04, Math.min(1.25, hFrac)); // 힌트용으로 범위를 살짝 벗어나도 안전하게 클램프
+  const floorY = 68;      // 바닥선 고정
+  const maxH   = 50;      // 최대 높이(픽셀, viewBox 기준)
+  const barH   = f * maxH;
+  const topY   = floorY - barH;
+  const frontW = 24;      // 정면 폭 고정 (높이와 무관)
+  const depth  = 11;      // 입체감을 위한 깊이 고정
+  const leftX  = 40 - frontW/2 - depth/2; // 박스 중앙 정렬
+  const rightX = leftX + frontW;
+  const dx = depth, dy = depth*0.58;
+  const shadow = `<ellipse cx="${(leftX+rightX)/2+dx/2}" cy="${floorY+dy*0.5+3}" rx="${frontW/2+dx/2+4}" ry="4" fill="rgba(0,0,0,0.10)"/>`;
+  const side = `<polygon points="${rightX},${topY} ${rightX+dx},${topY-dy} ${rightX+dx},${floorY-dy} ${rightX},${floorY}" fill="${t.side}"/>`;
+  const top_ = `<polygon points="${leftX},${topY} ${leftX+dx},${topY-dy} ${rightX+dx},${topY-dy} ${rightX},${topY}" fill="${t.top}"/>`;
+  const front = `<rect x="${leftX}" y="${topY}" width="${frontW}" height="${barH}" rx="2.5" fill="${t.front}"/>`;
+  const body = `${shadow}${side}${front}${top_}`;
+  return `<svg viewBox="0 0 80 80" width="${boxPx}" height="${boxPx}" style="display:block;">${body}</svg>`;
+}
+
 const SEQ_COLORS=[
   {key:'co_red',   lbl:'빨강', fill:'#ef4444'},
   {key:'co_orange',lbl:'주황', fill:'#f97316'},
@@ -3556,22 +3592,16 @@ function buildSeqSize(){
 
 // ── 높이 모드 ──
 function buildSeqHeight(){
-  // 높이 비교가 명확한 도형만 사용 (세로로 길거나 정방형인 것)
-  // 가로로 넓은 도형(화살표, 타원, 사다리꼴 등) 제외
-  const HEIGHT_SHAPES=['sh_square','sh_circle','sh_triangle','sh_diamond',
-    'sh_heart','sh_star5','sh_pentagon','sh_hexagon','sh_star4',
-    'sh_cross','sh_octagon','sh_star6'];
-  const shapeKey=HEIGHT_SHAPES[seqShapeIdx%HEIGHT_SHAPES.length]; seqShapeIdx++;
+  // 입체 기둥(3D 막대)만 사용 — 폭/깊이는 항상 고정, 높이만 값에 따라 달라짐
+  const theme=BAR3D_THEMES[seqShapeIdx%BAR3D_THEMES.length]; seqShapeIdx++;
   const n=SEQ.count;
   const sz=getSeqItemSize(n);
-  // 가로 폭 고정: sz의 55% (충분히 보이되 세로 변화가 명확하게)
-  const baseW=Math.round(sz*0.55);
-  // 세로: sz의 15%~95% 범위로 넓게 잡아 차이를 극대화
-  const minH=Math.round(sz*0.15), maxH=Math.round(sz*0.95);
-  const step=(maxH-minH)/(n-1||1);
-  const heights=Array.from({length:n},(_,i)=>Math.round(minH+i*step));
-  seqAnswers=SEQ.dir==='asc'?[...heights]:[...heights].reverse();
-  seqItems=shuffle(heights.map((h,i)=>({id:'ht_'+i,value:h,shapeKey,w:baseW,h})));
+  // 높이 비율: 0.16(가장 낮음) ~ 1.0(가장 높음) 균등 분할
+  const minFrac=0.16, maxFrac=1.0;
+  const step=(maxFrac-minFrac)/(n-1||1);
+  const fracs=Array.from({length:n},(_,i)=>+(minFrac+i*step).toFixed(4));
+  seqAnswers=SEQ.dir==='asc'?[...fracs]:[...fracs].reverse();
+  seqItems=shuffle(fracs.map((f,i)=>({id:'ht_'+i,value:f,isHeightBar:true,theme,w:sz,h:sz})));
   renderSeqProblem(sz);
 }
 
@@ -3580,8 +3610,11 @@ function buildSeqNumber(){
   const n=SEQ.count;
   const sz=getSeqItemSize(n);
   const numSz=Math.max(44,Math.min(sz,160));
-  // 오름차순: 1~n, 내림차순: n~1
-  const nums=Array.from({length:n},(_,i)=>i+1);
+  // 시작 숫자를 1~6 중 랜덤으로 골라 문제가 다양하게 나오도록 함 (예: 1~4, 2~5, 3~6 ...)
+  // 너무 커지지 않도록 개수(n)가 많을 때는 시작값 범위를 살짝 줄임
+  const maxStart = Math.max(1, 7 - Math.floor(n/3));
+  const startVal = 1 + Math.floor(Math.random()*maxStart);
+  const nums = Array.from({length:n},(_,i)=>startVal+i);
   seqAnswers=SEQ.dir==='asc'?[...nums]:[...nums].reverse();
   seqItems=shuffle(nums.map((num,i)=>({id:'num_'+i,value:num,w:numSz,h:numSz,isNum:true})));
   renderSeqProblemNumber(numSz);
@@ -3719,8 +3752,12 @@ function makeSeqEl(item, slotSz, extraClass='seq-item'){
   el.dataset.id=item.id; el.dataset.value=item.value;
   // 슬롯 크기로 박스 고정, SVG는 item.w/h 그대로
   el.style.cssText=`width:${slotSz}px;height:${slotSz}px;`;
-  const svgBody=(SVG[item.shapeKey]||'');
-  el.innerHTML=`<svg viewBox="0 0 80 80" width="${item.w}" height="${item.h}" style="display:block;">${svgBody}</svg>`;
+  if(item.isHeightBar){
+    el.innerHTML=make3DBarSVG(item.value, slotSz, item.theme);
+  } else {
+    const svgBody=(SVG[item.shapeKey]||'');
+    el.innerHTML=`<svg viewBox="0 0 80 80" width="${item.w}" height="${item.h}" style="display:block;">${svgBody}</svg>`;
+  }
   return el;
 }
 
@@ -3751,8 +3788,12 @@ function renderSeqFixedSlots(slotSz){
         hintEl.className='slot-hint-img';
         hintEl.style.cssText=`position:absolute;inset:0;display:flex;align-items:center;
           justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s;`;
-        const svgBody=(SVG[ansItem.shapeKey]||'');
-        hintEl.innerHTML=`<svg viewBox="0 0 80 80" width="${Math.round(ansItem.w*0.85)}" height="${Math.round(ansItem.h*0.85)}">${svgBody}</svg>`;
+        if(ansItem.isHeightBar){
+          hintEl.innerHTML=make3DBarSVG(ansItem.value, Math.round(slotSz*0.85), ansItem.theme);
+        } else {
+          const svgBody=(SVG[ansItem.shapeKey]||'');
+          hintEl.innerHTML=`<svg viewBox="0 0 80 80" width="${Math.round(ansItem.w*0.85)}" height="${Math.round(ansItem.h*0.85)}">${svgBody}</svg>`;
+        }
         slot.appendChild(hintEl);
       }
     } else {
@@ -3796,41 +3837,48 @@ function makeSeqDirIcon(side, slotSz){
     position:relative;overflow:visible;`;
 
   if(SEQ.type==='number'){
-    // 숫자 모드: 2단계 벗어난 값 (min-2 / max+2) — 음수는 특수교육 대상 학생에게 혼란을 줄 수 있어 0으로 하한
-    const n=SEQ.count;
-    const minVal=1, maxVal=n;
-    const outVal=isSmall ? Math.max(0, minVal-2) : (maxVal+2);
+    // 숫자 모드: 제시된 숫자 중 가장 작은 값보다 정확히 1 작게, 가장 큰 값보다 정확히 1 크게
+    // (시작 숫자가 매번 랜덤이므로 1로 고정하지 않고 실제 seqItems에서 min/max를 구함)
+    // 음수는 특수교육 대상 학생에게 혼란을 줄 수 있어 0으로 하한
+    const vals=seqItems.map(it=>it.value);
+    const minVal=Math.min(...vals), maxVal=Math.max(...vals);
+    const outVal=isSmall ? Math.max(0, minVal-1) : (maxVal+1);
     const numEl=document.createElement('div');
     numEl.style.cssText=`font-size:${Math.round(slotSz*0.4)}px;font-weight:900;
       color:#4f46e5;opacity:0.7;`;
     numEl.textContent=outVal;
     box.appendChild(numEl);
+  } else if(SEQ.type==='height'){
+    // 높이 모드: 실제 사용 중인 3D 막대 테마로, 범위를 살짝 벗어난 높이를 힌트로 표시
+    const vals=seqItems.map(it=>it.value);
+    const minV=Math.min(...vals), maxV=Math.max(...vals);
+    const n=Math.max(seqItems.length,2);
+    const step=(maxV-minV)/(n-1) || 0.15;
+    const outFrac = isSmall ? Math.max(0.03, minV-step*1.6) : Math.min(1.2, maxV+step*1.6);
+    const theme=seqItems[0]?.theme;
+    const boxPx=Math.round(slotSz*0.62);
+    const svgWrap=document.createElement('div');
+    svgWrap.style.cssText=`display:flex;align-items:center;justify-content:center;
+      width:100%;height:100%;overflow:visible;opacity:0.55;`;
+    svgWrap.innerHTML=make3DBarSVG(outFrac, boxPx, theme);
+    box.appendChild(svgWrap);
   } else {
-    // 크기/높이 모드: 2단계 차이로 더 직관적인 힌트
+    // 크기 모드: 제일 작은/큰 도형보다 일정 비율(28%) 작거나 크게 — 항목 개수와 무관하게 항상 뚜렷이 보이도록
+    // (이전에 쓰던 "항목 간 간격의 n배" 방식은 항목이 2~3개뿐일 때 간격이 너무 커서
+    //  힌트가 거의 안 보이는 크기까지 줄어드는 문제가 있었음)
     const shapeKey=seqItems[0]?.shapeKey||'sh_square';
     const svgBody=(SVG[shapeKey]||'');
     const vals=seqItems.map(it=>it.value);
     const minV=Math.min(...vals), maxV=Math.max(...vals);
-    const n=Math.max(seqItems.length,2);
-    const step=(maxV-minV)/(n-1) || Math.max(6,Math.round(slotSz*0.12));
-    // 2단계 차이 — 작은쪽: min-(step*2), 큰쪽: max+(step*2)
-    // 큰쪽은 SVG 자체를 slotSz*0.9 안에 맞추되 비율로 보여줌
-    const rawSmall=Math.max(8,  Math.round(minV - step*2));
-    const rawLarge=Math.round(maxV + step*2);
+    const rawSmall=Math.max(14, Math.round(minV*0.72));
+    const rawLarge=Math.round(maxV*1.28);
     // 박스 안에 표시되는 렌더 크기 (SVG width/height)
     const renderMax=Math.round(slotSz*0.88);
     const outVal = isSmall ? rawSmall : Math.min(renderMax, rawLarge);
     // 큰쪽이 renderMax에 잘렸는지 여부 (잘렸어도 maxV보다는 커야 함)
-    const clampedLarge=isSmall?outVal:Math.max(outVal, Math.round(maxV*1.18));
-    let svgW, svgH;
-    if(SEQ.type==='height'){
-      const baseW=Math.round((seqItems[0]?.w)||slotSz*0.5);
-      svgW=Math.min(baseW, Math.round(slotSz*0.5));
-      svgH=isSmall ? outVal : clampedLarge;
-    } else {
-      const renderVal=isSmall ? outVal : clampedLarge;
-      svgW=renderVal; svgH=renderVal;
-    }
+    const clampedLarge=isSmall?outVal:Math.max(outVal, Math.round(maxV*1.08));
+    const renderVal=isSmall ? outVal : clampedLarge;
+    const svgW=renderVal, svgH=renderVal;
     const svgWrap=document.createElement('div');
     svgWrap.style.cssText=`display:flex;align-items:center;justify-content:center;
       width:100%;height:100%;overflow:visible;`;
@@ -3893,8 +3941,12 @@ function renderSeqFreeZone(slotSz){
     } else {
       const ansItem=seqItems.find(it=>it.value===ansVal);
       if(ansItem){
-        const svgBody=(SVG[ansItem.shapeKey]||'');
-        hintEl.innerHTML=`<svg viewBox="0 0 80 80" width="${Math.round(ansItem.w*0.8)}" height="${Math.round(ansItem.h*0.8)}">${svgBody}</svg>`;
+        if(ansItem.isHeightBar){
+          hintEl.innerHTML=make3DBarSVG(ansItem.value, Math.round(slotSz*0.8), ansItem.theme);
+        } else {
+          const svgBody=(SVG[ansItem.shapeKey]||'');
+          hintEl.innerHTML=`<svg viewBox="0 0 80 80" width="${Math.round(ansItem.w*0.8)}" height="${Math.round(ansItem.h*0.8)}">${svgBody}</svg>`;
+        }
       }
     }
     slot.appendChild(hintEl);
@@ -4379,8 +4431,8 @@ function buildArrangeMode(){
   hintOn=false;
   document.getElementById('hintBtn').classList.remove('on');
 
-  // 풀에서 랜덤 선택
-  const pool=shuffle([...POOLS[S.type]]).slice(0,ARR.count);
+  // 풀에서 랜덤 선택 (S.type이 유효하지 않으면 도형으로 대체)
+  const pool=shuffle([...(POOLS[S.type]||POOLS.shapes)]).slice(0,ARR.count);
   arrangeProblemOrder=shuffle([...pool]);
 
   const n=ARR.count;
