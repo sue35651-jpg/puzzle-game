@@ -978,6 +978,12 @@ body.screen-shake {
         border-radius:10px;padding:3px 10px;margin-left:8px;">
         <span style="font-size:14px;">⏱️</span>
         <span id="timerTxt" style="font-size:14px;font-weight:900;color:#fff;min-width:44px;">00:00</span>
+        <button onclick="toggleTimerPause()" id="pauseBtn" title="일시정지"
+          style="border:none;background:rgba(255,255,255,0.25);border-radius:6px;
+          width:20px;height:20px;display:flex;align-items:center;justify-content:center;
+          cursor:pointer;padding:0;margin-left:2px;">
+          <span id="pauseIco" style="font-size:11px;line-height:1;">⏸</span>
+        </button>
       </div>
       <!-- 문제 수 표시 (무한/목표) -->
       <div id="quizCountDisplay" style="display:none;align-items:center;gap:4px;
@@ -989,6 +995,9 @@ body.screen-shake {
   </div>
   <!-- 상단 버튼 -->
   <div class="top-bar">
+    <button class="ibtn" onclick="toggleMute()" id="muteBtn" title="소리 끄기">
+      <svg viewBox="0 0 24 24" id="muteIco" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+    </button>
     <button class="ibtn" id="hintBtn" onclick="toggleHint()" title="힌트">
       <svg viewBox="0 0 24 24"><path d="M12 2C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .6.4 1 1 1h6c.6 0 1-.4 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7zm2 14h-4v-1h4v1zm0-2h-4v-1h4v1zm-.7-5L12 10.5l-1.3-1.5C10.2 8.5 10 8 10 7.5c0-1.1.9-2 2-2s2 .9 2 2c0 .5-.2 1-.7 1.5z"/></svg>
     </button>
@@ -1162,12 +1171,14 @@ body.screen-shake {
 <script>
 // ══════════ AUDIO ══════════
 let AC = null;
+let soundMuted = false;
 function ac() {
   if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
   if (AC.state === 'suspended') AC.resume();
   return AC;
 }
 function tone(f, type, dur, delay, vol) {
+  if (soundMuted) return;
   try {
     const a = ac(), o = a.createOscillator(), g = a.createGain();
     o.type = type||'sine'; o.frequency.value = f;
@@ -1177,6 +1188,23 @@ function tone(f, type, dur, delay, vol) {
     g.gain.exponentialRampToValueAtTime(0.001,t+dur);
     o.start(t); o.stop(t+dur+0.01);
   } catch(e){}
+}
+// 소리 끄기/켜기 — 조용해야 하는 교실 상황(시험 시간, 다른 수업과 공간 공유 등) 대응
+function toggleMute(){
+  soundMuted = !soundMuted;
+  const btn = document.getElementById('muteBtn');
+  const svg = document.getElementById('muteIco');
+  if (!btn || !svg) return;
+  if (soundMuted) {
+    btn.classList.add('on');
+    btn.title = '소리 켜기';
+    svg.innerHTML = '<path d="M16.5 12A4.5 4.5 0 0014 7.97v2.21l2.45 2.45c.03-.2.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.796 8.796 0 0021 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 003.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4l-1.88 1.88L12 7.76V4z"/>';
+  } else {
+    btn.classList.remove('on');
+    btn.title = '소리 끄기';
+    svg.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
+  }
+  if (typeof scheduleSaveSettings === 'function') scheduleSaveSettings();
 }
 function sndClick()  { tone(900,'sine',0.1,0,0.28); tone(1200,'sine',0.07,0.04,0.12); }
 function sndPlace()  { [523,659,784,1047].forEach((f,i)=>tone(f,'sine',0.32,i*0.08,0.2)); }
@@ -2009,26 +2037,26 @@ const SVG = {
     </g>`,
 
   // ── COLORS ──
-  co_red:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#ef4444"/>',
-  co_orange: '<rect x="4" y="4" width="72" height="72" rx="10" fill="#f97316"/>',
-  co_yellow: '<rect x="4" y="4" width="72" height="72" rx="10" fill="#eab308"/>',
-  co_green:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#22c55e"/>',
-  co_blue:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#3b82f6"/>',
-  co_navy:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#4f46e5"/>',
-  co_purple: '<rect x="4" y="4" width="72" height="72" rx="10" fill="#a855f7"/>',
-  co_pink:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#ec4899"/>',
-  co_sky:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#06b6d4"/>',
-  co_brown:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#a16207"/>',
-  co_white:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="3"/>',
-  co_black:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#1e293b" stroke="#475569" stroke-width="3"/>',
-  co_red2:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#dc2626"/>',
-  co_lime:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#84cc16"/>',
-  co_teal:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#14b8a6"/>',
-  co_mint:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#6ee7b7"/>',
-  co_coral:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#fb7185"/>',
-  co_gold:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#f59e0b"/>',
-  co_violet:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#7c3aed"/>',
-  co_gray:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#6b7280"/>',
+  co_red:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#ef4444"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">빨강</text>',
+  co_orange: '<rect x="4" y="4" width="72" height="72" rx="10" fill="#f97316"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">주황</text>',
+  co_yellow: '<rect x="4" y="4" width="72" height="72" rx="10" fill="#eab308"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">노랑</text>',
+  co_green:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#22c55e"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">초록</text>',
+  co_blue:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#3b82f6"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">파랑</text>',
+  co_navy:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#4f46e5"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">남색</text>',
+  co_purple: '<rect x="4" y="4" width="72" height="72" rx="10" fill="#a855f7"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">보라</text>',
+  co_pink:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#ec4899"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">분홍</text>',
+  co_sky:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#06b6d4"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">하늘</text>',
+  co_brown:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#a16207"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">갈색</text>',
+  co_white:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="3"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">흰색</text>',
+  co_black:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#1e293b" stroke="#475569" stroke-width="3"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">검정</text>',
+  co_red2:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#dc2626"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="12" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">진빨강</text>',
+  co_lime:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#84cc16"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">연두</text>',
+  co_teal:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#14b8a6"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">청록</text>',
+  co_mint:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#6ee7b7"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">민트</text>',
+  co_coral:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#fb7185"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">코랄</text>',
+  co_gold:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#f59e0b"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">금색</text>',
+  co_violet:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#7c3aed"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="12" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">진보라</text>',
+  co_gray:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#6b7280"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">회색</text>',
 };
 
 // Puzzle item pools — 카드매칭: 유형별 고유 그림만, 클래식: 전체 사용
@@ -2254,6 +2282,14 @@ function updSlider() {
   document.getElementById('v-range').textContent  = RNG_LBL[S.range];
 }
 
+// 하단에 position:fixed로 고정된 저작권 바가 실제 차지하는 높이를 구함.
+// #gameScreen은 height:100vh라서 이 바의 존재를 모른 채 화면 전체를 가용 공간으로 계산해버리면,
+// 보드/트레이의 맨 아래쪽이 저작권 바에 가려지는 문제가 생김 — 모든 레이아웃 계산에서 이 값만큼 빼야 함
+function getCopyrightBarH() {
+  const bar = document.getElementById('copyrightBar');
+  return bar ? bar.offsetHeight : 28;
+}
+
 // ══════════ GAME START ══════════
 function shuffle(a) {
   const r=[...a]; for(let i=r.length-1;i>0;i--){const j=0|Math.random()*(i+1);[r[i],r[j]]=[r[j],r[i]];} return r;
@@ -2337,7 +2373,8 @@ function buildCardMode() {
   const topBarEl = document.querySelector('.top-bar');
   const areaRect = gameEl.getBoundingClientRect();
   const usedH    = (progEl   ? progEl.offsetHeight  : 0)
-                 + (topBarEl ? topBarEl.offsetHeight : 0);
+                 + (topBarEl ? topBarEl.offsetHeight : 0)
+                 + getCopyrightBarH();
   const gap = 8, padX = 20, padY = 18, boardTrayGap = 10, trayColCount = 2;
   const availW = areaRect.width  - padX;
   const availH = areaRect.height - usedH - padY;
@@ -2660,6 +2697,30 @@ function makeSlotOutlineSVG(col, row, cellW, cellH, done=false) {
 </svg>`;
 }
 
+// 조각 수 n에 가장 가까운(가급적 정확히 일치하는) 직사각형 격자를 찾음
+// - 우선 n 그 자체의 약수 중 가로세로 비율이 너무 납작하지 않은(≤2.6) 조합을 찾고
+// - 마땅한 조합이 없으면(소수 등) n을 최대 +8까지 늘려가며 재시도
+// 이렇게 하면 "1개" 요청 시 실제로 1조각, "2개"는 2조각처럼 요청한 개수가 최대한 정확히 반영됨
+// (예전 방식은 구간표 방식이라 1~3개를 요청해도 전부 4조각으로 나오는 문제가 있었음)
+function calcClassicGrid(n) {
+  n = Math.max(1, Math.min(100, Math.round(n)));
+  const MAX_RATIO = 2.6;
+  for (let cand = n; cand <= n + 8; cand++) {
+    let best = null, bestDiff = Infinity;
+    for (let c = 1; c <= cand; c++) {
+      if (cand % c !== 0) continue;
+      const r = cand / c;
+      const ratio = Math.max(c, r) / Math.min(c, r);
+      if (ratio > MAX_RATIO) continue;
+      const diff = Math.abs(c - Math.sqrt(cand));
+      if (diff < bestDiff) { bestDiff = diff; best = { cols: c, rows: r }; }
+    }
+    if (best) return best;
+  }
+  const c = Math.ceil(Math.sqrt(n));
+  return { cols: c, rows: Math.ceil(n / c) };
+}
+
 // ══════════ CLASSIC MODE ══════════
 let classicCols=2, classicRows=2, classicCellW=80, classicCellH=80;
 let classicDataUrl='';
@@ -2669,25 +2730,10 @@ function buildClassicMode() {
   const pRow  = document.getElementById('cPiecesRow');
   board.innerHTML=''; pRow.innerHTML='';
 
-  // ① 격자 결정 — 빈칸 없도록 n을 균등하게 나누는 cols 선택
+  // ① 격자 결정 — 요청한 조각 수(n)에 최대한 정확히 맞는 격자 선택
   const n = S.pieces;
-  if      (n <= 4)   { classicCols=2;  classicRows=2; }
-  else if (n <= 6)   { classicCols=3;  classicRows=2; }
-  else if (n <= 9)   { classicCols=3;  classicRows=3; }
-  else if (n <= 12)  { classicCols=4;  classicRows=3; }
-  else if (n <= 16)  { classicCols=4;  classicRows=4; }
-  else if (n <= 20)  { classicCols=5;  classicRows=4; }
-  else if (n <= 25)  { classicCols=5;  classicRows=5; }
-  else if (n <= 30)  { classicCols=6;  classicRows=5; }
-  else if (n <= 36)  { classicCols=6;  classicRows=6; }
-  else if (n <= 42)  { classicCols=7;  classicRows=6; }
-  else if (n <= 49)  { classicCols=7;  classicRows=7; }
-  else if (n <= 56)  { classicCols=8;  classicRows=7; }
-  else if (n <= 64)  { classicCols=8;  classicRows=8; }
-  else if (n <= 72)  { classicCols=9;  classicRows=8; }
-  else if (n <= 81)  { classicCols=9;  classicRows=9; }
-  else if (n <= 90)  { classicCols=10; classicRows=9; }
-  else               { classicCols=10; classicRows=10; }
+  const grid = calcClassicGrid(n);
+  classicCols = grid.cols; classicRows = grid.rows;
   total  = classicCols * classicRows;
   placed = 0;
   updProg();
@@ -2698,7 +2744,8 @@ function buildClassicMode() {
   const topBarEl = document.querySelector('.top-bar');
   const areaRect = gameEl.getBoundingClientRect();
   const usedH    = (progEl  ? progEl.offsetHeight  : 0)
-                 + (topBarEl? topBarEl.offsetHeight : 0);
+                 + (topBarEl? topBarEl.offsetHeight : 0)
+                 + getCopyrightBarH();
   const gap      = 6;
   const padX     = 20;   // classicArea 좌우 패딩 합계
   const padY     = 18;   // classicArea 상하 패딩 합계
@@ -3185,6 +3232,9 @@ function rebuildCardLayout() {
 // ══════════ NAV ══════════
 function goHome(){
   stopTimer();
+  taPaused=false;
+  const pauseOv=document.getElementById('pauseOverlay');
+  if(pauseOv) pauseOv.style.display='none';
   if(nextProblemTimer){ clearTimeout(nextProblemTimer); nextProblemTimer=null; }
   forceEndDrag();
   document.querySelectorAll('.near').forEach(s=>s.classList.remove('near'));
@@ -3313,27 +3363,170 @@ const BAR3D_THEMES=[
   {front:'#60a5fa',side:'#1d4ed8',top:'#bfdbfe'}, // 파랑
 ];
 
-// ── 3D 막대(기둥) SVG 생성: 폭·깊이는 항상 고정, 높이(hFrac)만 값에 따라 변화 ──
-// 도형을 통째로 늘려 찌그러뜨리는 대신, 같은 정사각형 박스 안에서 기둥의 실제 높이만 다르게 그려
-// "크기"가 아닌 "높이" 개념이 시각적으로 명확히 구분되도록 함
-function make3DBarSVG(hFrac, boxPx, theme){
+// 높이 모드 오브젝트 테마 — 매 문제마다 로테이션되어 다양한 소재로 "높이" 개념을 표현함
+// (기둥 하나만 반복되던 단조로움 개선: 실생활 사물 + 성장 스토리텔링 소재를 함께 섞음)
+const HEIGHT_OBJECT_THEMES=[
+  {type:'bar'},          // 추상 3D 기둥
+  {type:'tree'},         // 나무가 자라는 모습 (성장 스토리텔링)
+  {type:'sprout'},       // 새싹/꽃이 자라는 모습 (성장 스토리텔링)
+  {type:'bottle'},       // 물병 속 물 높이 (실생활 사물)
+  {type:'thermometer'},  // 온도계 눈금 높이 (실생활 사물)
+  {type:'candle'},       // 초의 길이 (실생활 사물)
+  {type:'building'},     // 건물 높이 (실생활 사물)
+];
+
+function clampHFrac(hFrac){ return Math.max(0.04, Math.min(1.25, hFrac)); }
+
+// 눈금자 배경선 — 바닥선 + 옅은 가로 보조선으로 "키를 잰다"는 느낌을 주고 높이 비교를 돕는 시각 보조 장치
+function rulerBG(){
+  const lines=[18,30,42,54].map(y=>
+    `<line x1="9" y1="${y}" x2="71" y2="${y}" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="2.5,3" opacity="0.5"/>`
+  ).join('');
+  const ticks=[18,30,42,54,68].map(y=>
+    `<line x1="7" y1="${y}" x2="11" y2="${y}" stroke="#94a3b8" stroke-width="1.3" opacity="0.65"/>`
+  ).join('');
+  const baseline=`<line x1="5" y1="68" x2="75" y2="68" stroke="#94a3b8" stroke-width="1.6" opacity="0.7"/>`;
+  return lines+ticks+baseline;
+}
+function svgWrapHeight(body, boxPx){
+  return `<svg viewBox="0 0 80 80" width="${boxPx}" height="${boxPx}" style="display:block;">${rulerBG()}${body}</svg>`;
+}
+
+// ── ① 3D 막대(기둥): 폭·깊이 고정, 높이만 변화 ──
+function renderBarObj(hFrac, boxPx, theme){
   const t = theme || BAR3D_THEMES[0];
-  const f = Math.max(0.04, Math.min(1.25, hFrac)); // 힌트용으로 범위를 살짝 벗어나도 안전하게 클램프
-  const floorY = 68;      // 바닥선 고정
-  const maxH   = 50;      // 최대 높이(픽셀, viewBox 기준)
-  const barH   = f * maxH;
-  const topY   = floorY - barH;
-  const frontW = 24;      // 정면 폭 고정 (높이와 무관)
-  const depth  = 11;      // 입체감을 위한 깊이 고정
-  const leftX  = 40 - frontW/2 - depth/2; // 박스 중앙 정렬
+  const f = clampHFrac(hFrac);
+  const floorY = 68, maxH = 50;
+  const barH = f * maxH;
+  const topY = floorY - barH;
+  const frontW = 24, depth = 11;
+  const leftX = 40 - frontW/2 - depth/2;
   const rightX = leftX + frontW;
   const dx = depth, dy = depth*0.58;
   const shadow = `<ellipse cx="${(leftX+rightX)/2+dx/2}" cy="${floorY+dy*0.5+3}" rx="${frontW/2+dx/2+4}" ry="4" fill="rgba(0,0,0,0.10)"/>`;
   const side = `<polygon points="${rightX},${topY} ${rightX+dx},${topY-dy} ${rightX+dx},${floorY-dy} ${rightX},${floorY}" fill="${t.side}"/>`;
   const top_ = `<polygon points="${leftX},${topY} ${leftX+dx},${topY-dy} ${rightX+dx},${topY-dy} ${rightX},${topY}" fill="${t.top}"/>`;
   const front = `<rect x="${leftX}" y="${topY}" width="${frontW}" height="${barH}" rx="2.5" fill="${t.front}"/>`;
-  const body = `${shadow}${side}${front}${top_}`;
-  return `<svg viewBox="0 0 80 80" width="${boxPx}" height="${boxPx}" style="display:block;">${body}</svg>`;
+  return svgWrapHeight(shadow+side+front+top_, boxPx);
+}
+
+// ── ② 나무: 기둥(줄기)이 자라고, 잎(가지) 크기는 고정 — 폭은 그대로, 키만 커지는 성장 표현 ──
+function renderTreeObj(hFrac, boxPx){
+  const f = clampHFrac(hFrac);
+  const floorY = 68, maxTrunkH = 34;
+  const trunkH = 8 + f*maxTrunkH;
+  const trunkW = 7, trunkX = 40-trunkW/2;
+  const trunkTopY = floorY - trunkH;
+  const foliageR = 15;
+  const foliageCY = trunkTopY - foliageR*0.6;
+  const shadow = `<ellipse cx="40" cy="${floorY+2}" rx="16" ry="3.5" fill="rgba(0,0,0,0.10)"/>`;
+  const trunk = `<rect x="${trunkX}" y="${trunkTopY}" width="${trunkW}" height="${trunkH}" rx="2" fill="#92400e"/>`;
+  const foliage = `<circle cx="30" cy="${foliageCY+5}" r="${foliageR*0.7}" fill="#16a34a"/>
+    <circle cx="50" cy="${foliageCY+5}" r="${foliageR*0.7}" fill="#16a34a"/>
+    <circle cx="40" cy="${foliageCY}" r="${foliageR}" fill="#22c55e"/>`;
+  return svgWrapHeight(shadow+trunk+foliage, boxPx);
+}
+
+// ── ③ 새싹: 줄기가 자라고, 잎/꽃봉오리 크기는 고정 — 성장 스토리텔링 ──
+function renderSproutObj(hFrac, boxPx){
+  const f = clampHFrac(hFrac);
+  const floorY = 68, maxStemH = 40;
+  const stemH = 6 + f*maxStemH;
+  const stemTopY = floorY - stemH;
+  const shadow = `<ellipse cx="40" cy="${floorY+2}" rx="10" ry="3" fill="rgba(0,0,0,0.10)"/>`;
+  const stem = `<rect x="38.5" y="${stemTopY}" width="3" height="${stemH}" rx="1.5" fill="#16a34a"/>`;
+  const leafY = Math.min(floorY-8, stemTopY+stemH*0.45);
+  const leaves = `<ellipse cx="29" cy="${leafY}" rx="9" ry="5" fill="#4ade80" transform="rotate(-25 29 ${leafY})"/>
+    <ellipse cx="51" cy="${leafY}" rx="9" ry="5" fill="#4ade80" transform="rotate(25 51 ${leafY})"/>`;
+  const bud = `<circle cx="40" cy="${stemTopY}" r="6" fill="#fbbf24"/><circle cx="40" cy="${stemTopY}" r="3" fill="#f59e0b"/>`;
+  return svgWrapHeight(shadow+stem+leaves+bud, boxPx);
+}
+
+// ── ④ 물병: 병(용기)은 항상 같은 크기, 안의 물 높이만 변화 — 순수한 "높이" 개념 표현 ──
+function renderBottleObj(hFrac, boxPx){
+  const f = clampHFrac(hFrac);
+  const floorY = 68;
+  const bodyTop = 20, bodyW = 30, bodyX = 40-bodyW/2, bodyH = floorY-bodyTop;
+  const neckW = 12, neckX = 40-neckW/2, neckH = 8, neckTop = bodyTop-neckH;
+  const capH = 5, capTop = neckTop-capH;
+  const maxWaterH = bodyH-3;
+  const waterH = Math.max(2, f*maxWaterH);
+  const waterTop = floorY-waterH;
+  const shadow = `<ellipse cx="40" cy="${floorY+2}" rx="17" ry="3" fill="rgba(0,0,0,0.10)"/>`;
+  const water = `<rect x="${bodyX+2}" y="${waterTop}" width="${bodyW-4}" height="${Math.max(1,waterH-1)}" rx="3" fill="#38bdf8"/>`;
+  const body = `<rect x="${bodyX}" y="${bodyTop}" width="${bodyW}" height="${bodyH}" rx="6" fill="none" stroke="#0891b2" stroke-width="2.5"/>`;
+  const neck = `<rect x="${neckX}" y="${neckTop}" width="${neckW}" height="${neckH}" fill="none" stroke="#0891b2" stroke-width="2.5"/>`;
+  const cap = `<rect x="${neckX-1}" y="${capTop}" width="${neckW+2}" height="${capH}" rx="1.5" fill="#f59e0b"/>`;
+  return svgWrapHeight(shadow+water+body+neck+cap, boxPx);
+}
+
+// ── ⑤ 온도계: 관(고정) 안에서 빨간 눈금(수은)만 높이가 변화 ──
+function renderThermoObj(hFrac, boxPx){
+  const f = clampHFrac(hFrac);
+  const bulbCY = 60, bulbR = 9;
+  const tubeW = 8, tubeX = 40-tubeW/2, tubeBottom = bulbCY-bulbR+4, tubeTop = 14;
+  const maxH = tubeBottom-tubeTop;
+  const mercH = Math.max(3, f*maxH);
+  const mercTop = tubeBottom-mercH;
+  const shadow = `<ellipse cx="40" cy="${bulbCY+bulbR+3}" rx="14" ry="3" fill="rgba(0,0,0,0.10)"/>`;
+  const tube = `<rect x="${tubeX}" y="${tubeTop}" width="${tubeW}" height="${tubeBottom-tubeTop}" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="2"/>`;
+  const merc = `<rect x="${tubeX+1.5}" y="${mercTop}" width="${tubeW-3}" height="${tubeBottom-mercTop}" rx="2.5" fill="#ef4444"/>`;
+  const bulb = `<circle cx="40" cy="${bulbCY}" r="${bulbR}" fill="#ef4444" stroke="#94a3b8" stroke-width="2"/>`;
+  const ticks = [tubeTop+6,tubeTop+16,tubeTop+26].map(y=>`<line x1="${tubeX+tubeW+2}" y1="${y}" x2="${tubeX+tubeW+6}" y2="${y}" stroke="#94a3b8" stroke-width="1.3"/>`).join('');
+  return svgWrapHeight(shadow+tube+merc+bulb+ticks, boxPx);
+}
+
+// ── ⑥ 촛불: 초의 길이(높이)만 변화, 불꽃/심지 크기는 고정 ──
+function renderCandleObj(hFrac, boxPx){
+  const f = clampHFrac(hFrac);
+  const floorY = 68, maxH = 42;
+  const waxH = 10 + f*maxH;
+  const waxW = 16, waxX = 40-waxW/2;
+  const waxTopY = floorY-waxH;
+  const shadow = `<ellipse cx="40" cy="${floorY+2}" rx="13" ry="3" fill="rgba(0,0,0,0.10)"/>`;
+  const wax = `<rect x="${waxX}" y="${waxTopY}" width="${waxW}" height="${waxH}" rx="2" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>`;
+  const wick = `<line x1="40" y1="${waxTopY}" x2="40" y2="${waxTopY-6}" stroke="#57534e" stroke-width="1.6"/>`;
+  const glow = `<circle cx="40" cy="${waxTopY-13}" r="9" fill="#fbbf24" opacity="0.18"/>`;
+  const flame = `<path d="M40,${waxTopY-19} q4,6 0,11 q-4,-5 0,-11 z" fill="#fb923c"/>
+    <path d="M40,${waxTopY-15} q2,4 0,7 q-2,-3 0,-7 z" fill="#fde047"/>`;
+  return svgWrapHeight(shadow+wax+glow+wick+flame, boxPx);
+}
+
+// ── ⑦ 건물: 건물 높이만 변화, 창문 배치는 높이에 비례해 자연스럽게 늘어남(폭은 고정) ──
+function renderBuildingObj(hFrac, boxPx){
+  const f = clampHFrac(hFrac);
+  const floorY = 68, maxH = 50;
+  const bldgH = 10 + f*maxH;
+  const bldgW = 26, bldgX = 40-bldgW/2;
+  const topY = floorY-bldgH;
+  const shadow = `<ellipse cx="40" cy="${floorY+2}" rx="17" ry="3" fill="rgba(0,0,0,0.10)"/>`;
+  const body = `<rect x="${bldgX}" y="${topY}" width="${bldgW}" height="${bldgH}" fill="#94a3b8"/>`;
+  const antenna = `<line x1="40" y1="${topY}" x2="40" y2="${topY-7}" stroke="#64748b" stroke-width="1.6"/><circle cx="40" cy="${topY-8}" r="1.6" fill="#ef4444"/>`;
+  const winW = 4.4, winGapX = 3.2, cols = 3;
+  const startX = bldgX+(bldgW-(winW*cols+winGapX*(cols-1)))/2;
+  const winRows = Math.max(1, Math.round(f*5));
+  let windows='';
+  for (let r=0; r<winRows; r++) {
+    const wy = floorY-10-r*9;
+    if (wy < topY+4) break;
+    for (let c=0; c<cols; c++) windows += `<rect x="${startX+c*(winW+winGapX)}" y="${wy}" width="${winW}" height="6" rx="0.8" fill="#fde047"/>`;
+  }
+  return svgWrapHeight(shadow+body+windows+antenna, boxPx);
+}
+
+// 테마 타입에 맞는 렌더 함수로 위임하는 진입점 — 문제 카드/힌트/방향 아이콘 전부 이 함수 하나만 부르면 됨
+function renderHeightObj(hFrac, boxPx, theme){
+  const t = theme || HEIGHT_OBJECT_THEMES[0];
+  switch (t.type) {
+    case 'tree':        return renderTreeObj(hFrac, boxPx);
+    case 'sprout':       return renderSproutObj(hFrac, boxPx);
+    case 'bottle':       return renderBottleObj(hFrac, boxPx);
+    case 'thermometer':  return renderThermoObj(hFrac, boxPx);
+    case 'candle':        return renderCandleObj(hFrac, boxPx);
+    case 'building':     return renderBuildingObj(hFrac, boxPx);
+    case 'bar':
+    default:              return renderBarObj(hFrac, boxPx, t.barColor);
+  }
 }
 
 const SEQ_COLORS=[
@@ -3391,25 +3584,55 @@ function selTimeLimit(min){
 }
 
 // ══════════ 타이머 엔진 ══════════
+let taPaused=false;
 function startTimer(){
   stopTimer();
   taRemain=TA.minutes*60;
+  taPaused=false;
   const disp=document.getElementById('timerDisplay');
   if(disp) disp.style.display='flex';
+  const pauseBtn=document.getElementById('pauseBtn');
+  if(pauseBtn) pauseBtn.style.display = TA.on ? 'flex' : 'none';
+  const pauseIco=document.getElementById('pauseIco');
+  if(pauseIco) pauseIco.textContent='⏸';
+  document.getElementById('pauseOverlay').style.display='none';
   updateTimerDisplay();
-  taTimer=setInterval(()=>{
-    taRemain--;
-    updateTimerDisplay();
-    if(taRemain<=10){
-      // 마지막 10초 경고 효과
-      const txt=document.getElementById('timerTxt');
-      if(txt) txt.style.color=taRemain%2===0?'#fbbf24':'#ef4444';
-    }
-    if(taRemain<=0){ stopTimer(); onTimeUp(); }
-  },1000);
+  taTimer=setInterval(tickTimer,1000);
+}
+function tickTimer(){
+  taRemain--;
+  updateTimerDisplay();
+  if(taRemain<=10){
+    // 마지막 10초 경고 효과
+    const txt=document.getElementById('timerTxt');
+    if(txt) txt.style.color=taRemain%2===0?'#fbbf24':'#ef4444';
+  }
+  if(taRemain<=0){ stopTimer(); onTimeUp(); }
 }
 function stopTimer(){
   if(taTimer){ clearInterval(taTimer); taTimer=null; }
+}
+// 타임어택 일시정지/재개 — 화장실, 다른 학생 지도 등으로 수업이 잠시 끊겨도
+// 카운트다운이 계속 흐르지 않도록 함
+function toggleTimerPause(){
+  if(!TA.on) return;
+  if(!taTimer && !taPaused) return; // 타이머가 아직 시작되지 않음
+  taPaused=!taPaused;
+  const pauseIco=document.getElementById('pauseIco');
+  const pauseBtn=document.getElementById('pauseBtn');
+  const overlay=document.getElementById('pauseOverlay');
+  if(taPaused){
+    stopTimer();
+    forceEndDrag(); // 일시정지 중 드래그 중이던 조각이 있으면 정리
+    if(pauseIco) pauseIco.textContent='▶';
+    if(pauseBtn) pauseBtn.title='재개';
+    if(overlay) overlay.style.display='flex';
+  } else {
+    if(pauseIco) pauseIco.textContent='⏸';
+    if(pauseBtn) pauseBtn.title='일시정지';
+    if(overlay) overlay.style.display='none';
+    taTimer=setInterval(tickTimer,1000);
+  }
 }
 function updateTimerDisplay(){
   const m=Math.floor(taRemain/60), s=taRemain%60;
@@ -3417,6 +3640,7 @@ function updateTimerDisplay(){
   if(txt) txt.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 function onTimeUp(){
+  forceEndDrag();
   sndDone(); spawnConf();
   showCompleteScreen('time');
 }
@@ -3491,6 +3715,9 @@ function showCompleteScreen(reason){
 function initGameSession(){
   quizCount=0;
   stopTimer();
+  taPaused=false;
+  const pauseOv=document.getElementById('pauseOverlay');
+  if(pauseOv) pauseOv.style.display='none';
   if(nextProblemTimer){ clearTimeout(nextProblemTimer); nextProblemTimer=null; }
   // 타이머/문제수 UI 리셋
   const disp=document.getElementById('timerDisplay');
@@ -3563,11 +3790,12 @@ function getSeqItemSize(n){
   const progH=document.querySelector('.prog-wrap')?.offsetHeight||40;
   const topH=document.querySelector('.top-bar')?.offsetHeight||46;
   const checkH=document.getElementById('checkBtnBar')?.offsetHeight||0;
+  const copyH=getCopyrightBarH();
   const divH=4; // 구분선
   const labelH=20; // zone-label
   const padY=10; // 상하 패딩 (최소화)
   // 문제+정답 두 구역이 세로를 절반씩 사용
-  const availH=(rect.height-progH-topH-checkH-divH-labelH*2-padY*2)/2;
+  const availH=(rect.height-progH-topH-checkH-copyH-divH-labelH*2-padY*2)/2;
   const availW=rect.width-16;
   const gap=8;
   // 양끝 방향단서 아이콘은 카드보다 작으므로 0.55칸으로 계산(여유 확보)
@@ -3592,8 +3820,11 @@ function buildSeqSize(){
 
 // ── 높이 모드 ──
 function buildSeqHeight(){
-  // 입체 기둥(3D 막대)만 사용 — 폭/깊이는 항상 고정, 높이만 값에 따라 달라짐
-  const theme=BAR3D_THEMES[seqShapeIdx%BAR3D_THEMES.length]; seqShapeIdx++;
+  // 오브젝트 테마 로테이션 — 매 문제마다 다른 소재로 "높이" 개념을 표현 (기둥만 반복되는 단조로움 개선)
+  const objTheme=HEIGHT_OBJECT_THEMES[seqShapeIdx%HEIGHT_OBJECT_THEMES.length]; seqShapeIdx++;
+  const theme = objTheme.type==='bar'
+    ? {type:'bar', barColor: BAR3D_THEMES[Math.floor(Math.random()*BAR3D_THEMES.length)]}
+    : objTheme;
   const n=SEQ.count;
   const sz=getSeqItemSize(n);
   // 높이 비율: 0.16(가장 낮음) ~ 1.0(가장 높음) 균등 분할
@@ -3691,7 +3922,14 @@ function renderSeqColorProblem(colSz){
     el.dataset.id=item.id;
     el.dataset.colorKey=item.value;
     el.dataset.colorIdx=item.colorIdx;
-    el.style.cssText=`width:${colSz}px;height:${colSz}px;background:${item.color.fill};border-color:transparent;border-radius:14px;box-shadow:0 3px 12px rgba(0,0,0,0.12);`;
+    el.style.cssText=`width:${colSz}px;height:${colSz}px;background:${item.color.fill};border-color:transparent;border-radius:14px;box-shadow:0 3px 12px rgba(0,0,0,0.12);position:relative;display:flex;align-items:flex-end;justify-content:center;`;
+    // 색맹 학생을 위한 색 이름 라벨 — 색 인지 없이도 텍스트로 구분 가능하도록
+    const lbl=document.createElement('div');
+    lbl.style.cssText=`background:rgba(255,255,255,0.88);color:#1e293b;font-weight:800;
+      font-size:${Math.max(10,Math.round(colSz*0.14))}px;border-radius:7px 7px 12px 12px;
+      padding:2px 8px;margin-bottom:5px;pointer-events:none;`;
+    lbl.textContent=item.color.lbl;
+    el.appendChild(lbl);
     el.addEventListener('mousedown',seqColorDragStart,{passive:false});
     el.addEventListener('touchstart',seqColorDragStart,{passive:false});
     pZone.appendChild(el);
@@ -3753,7 +3991,7 @@ function makeSeqEl(item, slotSz, extraClass='seq-item'){
   // 슬롯 크기로 박스 고정, SVG는 item.w/h 그대로
   el.style.cssText=`width:${slotSz}px;height:${slotSz}px;`;
   if(item.isHeightBar){
-    el.innerHTML=make3DBarSVG(item.value, slotSz, item.theme);
+    el.innerHTML=renderHeightObj(item.value, slotSz, item.theme);
   } else {
     const svgBody=(SVG[item.shapeKey]||'');
     el.innerHTML=`<svg viewBox="0 0 80 80" width="${item.w}" height="${item.h}" style="display:block;">${svgBody}</svg>`;
@@ -3789,7 +4027,7 @@ function renderSeqFixedSlots(slotSz){
         hintEl.style.cssText=`position:absolute;inset:0;display:flex;align-items:center;
           justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s;`;
         if(ansItem.isHeightBar){
-          hintEl.innerHTML=make3DBarSVG(ansItem.value, Math.round(slotSz*0.85), ansItem.theme);
+          hintEl.innerHTML=renderHeightObj(ansItem.value, Math.round(slotSz*0.85), ansItem.theme);
         } else {
           const svgBody=(SVG[ansItem.shapeKey]||'');
           hintEl.innerHTML=`<svg viewBox="0 0 80 80" width="${Math.round(ansItem.w*0.85)}" height="${Math.round(ansItem.h*0.85)}">${svgBody}</svg>`;
@@ -3860,7 +4098,7 @@ function makeSeqDirIcon(side, slotSz){
     const svgWrap=document.createElement('div');
     svgWrap.style.cssText=`display:flex;align-items:center;justify-content:center;
       width:100%;height:100%;overflow:visible;opacity:0.55;`;
-    svgWrap.innerHTML=make3DBarSVG(outFrac, boxPx, theme);
+    svgWrap.innerHTML=renderHeightObj(outFrac, boxPx, theme);
     box.appendChild(svgWrap);
   } else {
     // 크기 모드: 제일 작은/큰 도형보다 일정 비율(28%) 작거나 크게 — 항목 개수와 무관하게 항상 뚜렷이 보이도록
@@ -3942,7 +4180,7 @@ function renderSeqFreeZone(slotSz){
       const ansItem=seqItems.find(it=>it.value===ansVal);
       if(ansItem){
         if(ansItem.isHeightBar){
-          hintEl.innerHTML=make3DBarSVG(ansItem.value, Math.round(slotSz*0.8), ansItem.theme);
+          hintEl.innerHTML=renderHeightObj(ansItem.value, Math.round(slotSz*0.8), ansItem.theme);
         } else {
           const svgBody=(SVG[ansItem.shapeKey]||'');
           hintEl.innerHTML=`<svg viewBox="0 0 80 80" width="${Math.round(ansItem.w*0.8)}" height="${Math.round(ansItem.h*0.8)}">${svgBody}</svg>`;
@@ -4286,13 +4524,19 @@ function seqColorDragStart(e){
     if(targetZone){
       // 어느 구역이든 일단 배치 허용 (정답확인 버튼으로 채점)
       const colSz=r.width;
+      const colorLbl=seqColorTargets.find(c=>c.key===colorKey)?.lbl||'';
       const card=document.createElement('div');
       card.className='seq-color-card';
       card.dataset.colorKey=colorKey;
       card.dataset.srcId=p.dataset.id;
       card.style.cssText=`width:${colSz}px;height:${colSz}px;border-radius:12px;
-        background:${fill};flex-shrink:0;cursor:grab;
+        background:${fill};flex-shrink:0;cursor:grab;position:relative;
+        display:flex;align-items:flex-end;justify-content:center;
         box-shadow:0 3px 10px rgba(0,0,0,0.15);`;
+      card.innerHTML=`<div style="background:rgba(255,255,255,0.88);color:#1e293b;
+        font-weight:800;font-size:${Math.max(9,Math.round(colSz*0.13))}px;
+        border-radius:6px 6px 10px 10px;padding:1px 6px;margin-bottom:3px;
+        pointer-events:none;">${colorLbl}</div>`;
       card.addEventListener('mousedown', seqColorCardDragStart, {passive:false});
       card.addEventListener('touchstart', seqColorCardDragStart, {passive:false});
       const cardsArea=targetZone.querySelector('.seq-color-cards');
@@ -4368,13 +4612,19 @@ function seqColorCardDragStart(e){
     });
     if(targetZone){
       const colSz=r.width;
+      const colorLbl2=seqColorTargets.find(c=>c.key===card.dataset.colorKey)?.lbl||'';
       const newCard=document.createElement('div');
       newCard.className='seq-color-card';
       newCard.dataset.colorKey=card.dataset.colorKey;
       newCard.dataset.srcId=srcId;
       newCard.style.cssText=`width:${colSz}px;height:${colSz}px;border-radius:12px;
-        background:${fill};flex-shrink:0;cursor:grab;
+        background:${fill};flex-shrink:0;cursor:grab;position:relative;
+        display:flex;align-items:flex-end;justify-content:center;
         box-shadow:0 3px 10px rgba(0,0,0,0.15);`;
+      newCard.innerHTML=`<div style="background:rgba(255,255,255,0.88);color:#1e293b;
+        font-weight:800;font-size:${Math.max(9,Math.round(colSz*0.13))}px;
+        border-radius:6px 6px 10px 10px;padding:1px 6px;margin-bottom:3px;
+        pointer-events:none;">${colorLbl2}</div>`;
       newCard.addEventListener('mousedown', seqColorCardDragStart, {passive:false});
       newCard.addEventListener('touchstart', seqColorCardDragStart, {passive:false});
       const cardsArea=targetZone.querySelector('.seq-color-cards');
@@ -4447,6 +4697,7 @@ function buildArrangeMode(){
   const progH=document.querySelector('.prog-wrap')?.offsetHeight||40;
   const topH=document.querySelector('.top-bar')?.offsetHeight||40;
   const checkH=document.getElementById('checkBtnBar')?.offsetHeight||36;
+  const copyH=getCopyrightBarH();
 
   // 트레이 카드 크기는 나중에 확정. 우선 트레이 폭 예약 (전체의 15~18%)
   const trayReserve=Math.max(90, Math.min(170, rect.width*0.16));
@@ -4459,7 +4710,7 @@ function buildArrangeMode(){
   const outerPad=6;  // arrangeArea 외부 패딩
 
   const availW=rect.width - trayReserve - outerPad*2 - 8;
-  const availH=rect.height - progH - topH - checkH - divH - labelH*2 - gapArea*3 - outerPad*2;
+  const availH=rect.height - progH - topH - checkH - copyH - divH - labelH*2 - gapArea*3 - outerPad*2;
   const zoneH=availH/2;
 
   // cols개 2줄 배치 기준 셀 크기
@@ -4755,9 +5006,122 @@ window.addEventListener('resize', () => {
     resizeTmr = setTimeout(() => rebuildCardLayout(), 120);
   }
 });
+
+// ══════════ 설정 기억 (localStorage) ══════════
+// 마지막으로 설정한 모드/유형/난이도 등을 브라우저에 저장해뒀다가
+// 다음에 열 때 자동으로 불러옴 (설정 화면만 복원 — 게임을 자동 시작하지는 않음)
+// GitHub Pages(https://) 등 정식 웹 주소로 열면 항상 안정적으로 동작함.
+// 로컬 파일(file://)로 직접 열 경우 브라우저에 따라 저장이 안 될 수 있는데,
+// 그런 경우에도 앱 자체는 오류 없이 정상 작동하도록 try/catch로 감싸둠.
+const SETTINGS_KEY = 'lampfairy_ddgd_puzzle_settings_v1';
+
+function saveSettings(){
+  try {
+    const data = {
+      mode: S.mode, type: S.type, pieces: S.pieces, size: S.size, range: S.range,
+      seqType: SEQ.type, seqCount: SEQ.count, seqColorKinds: SEQ.colorKinds,
+      seqDir: SEQ.dir, seqArrange: SEQ.arrange,
+      arrCount: ARR.count, arrMono: ARR.monoColor,
+      quizMode: QUIZ.mode, quizGoal: QUIZ.goal,
+      taOn: TA.on, taMinutes: TA.minutes,
+      muted: soundMuted,
+    };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(data));
+  } catch(e){ /* 프라이빗 브라우징 등으로 저장 불가 시 조용히 무시 */ }
+}
+
+let saveSettingsTimer=null;
+function scheduleSaveSettings(){
+  clearTimeout(saveSettingsTimer);
+  saveSettingsTimer=setTimeout(saveSettings, 150);
+}
+
+function loadSettings(){
+  let saved;
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if(!raw) return;
+    saved = JSON.parse(raw);
+  } catch(e){ return; }
+  if(!saved || typeof saved !== 'object') return;
+
+  try {
+    // 1) 모드 먼저 설정 — 유형 버튼 해석(도형 vs 패턴-도형)이 모드에 따라 달라짐
+    if(saved.mode){
+      const modeBtn=document.querySelector(`.mode-btn[data-mode="${saved.mode}"]`);
+      if(modeBtn) selMode(modeBtn);
+    }
+    // 2) 도형/동물/사물/색깔 유형
+    if(saved.type){
+      const isClassic=S.mode==='classic';
+      const typeBtn=[...document.querySelectorAll('#normal-type-card .type-btn')]
+        .find(b=> isClassic ? b.dataset.classicType===saved.type : b.dataset.type===saved.type);
+      if(typeBtn) selType(typeBtn);
+    }
+    // 3) 조각수/크기/인식범위 슬라이더 (유형별 최대치 재확인 후 반영)
+    const pcSlider=document.getElementById('sl-pieces');
+    if(typeof saved.pieces==='number' && pcSlider){
+      pcSlider.value=Math.max(parseInt(pcSlider.min)||1, Math.min(saved.pieces, parseInt(pcSlider.max)||100));
+    }
+    if(typeof saved.size==='number')  document.getElementById('sl-size').value=saved.size;
+    if(typeof saved.range==='number') document.getElementById('sl-range').value=saved.range;
+    updSlider();
+    // 4) 순서맞추기 유형/개수/색종류/방향/배치방식
+    if(saved.seqType){
+      const btn=[...document.querySelectorAll('[data-seq-type]')].find(b=>b.dataset.seqType===saved.seqType);
+      if(btn) selSeqType(btn);
+    }
+    if(typeof saved.seqCount==='number'){
+      document.getElementById('sl-seq-count').value=saved.seqCount; updSeqSlider();
+    }
+    if(typeof saved.seqColorKinds==='number'){
+      document.getElementById('sl-seq-color-kinds').value=saved.seqColorKinds; updSeqColorSlider();
+    }
+    if(saved.seqDir) selSeqDir(saved.seqDir);
+    if(saved.seqArrange) selArrange(saved.seqArrange);
+    // 5) 똑같이배치하기 개수/단색여부
+    if(typeof saved.arrCount==='number'){
+      document.getElementById('sl-arr-count').value=saved.arrCount; updArrSlider();
+    }
+    if(typeof saved.arrMono==='boolean') selArrMono(saved.arrMono);
+    // 6) 문제수 모드 / 타임어택
+    if(saved.quizMode) selQuizMode(saved.quizMode);
+    if(typeof saved.quizGoal==='number'){
+      document.getElementById('sl-quiz-goal').value=saved.quizGoal; updQuizGoalSlider();
+    }
+    if(typeof saved.taOn==='boolean' && saved.taOn!==TA.on) toggleTimeAttack();
+    if(typeof saved.taMinutes==='number') selTimeLimit(saved.taMinutes);
+    // 7) 소리 끄기 상태
+    if(saved.muted===true) toggleMute();
+  } catch(e){ /* 저장된 값이 손상됐어도 앱이 죽지 않도록 방어 */ }
+}
+
+// 설정 화면에서의 모든 클릭/슬라이더 조작을 감지해 자동 저장
+// (버튼 하나하나에 저장 코드를 심는 대신, 화면 단위로 감지해 새 설정이 추가돼도 자동으로 저장됨)
+document.getElementById('setupScreen').addEventListener('click', scheduleSaveSettings, true);
+document.getElementById('setupScreen').addEventListener('input', scheduleSaveSettings, true);
+
+loadSettings();
+
 </script>
 <!-- 화면 플래시 피드백 오버레이 -->
 <div id="flashOverlay"></div>
+
+<!-- 타임어택 일시정지 오버레이 -->
+<div id="pauseOverlay" style="display:none;position:fixed;inset:0;z-index:99990;
+  background:rgba(30,41,59,0.55);backdrop-filter:blur(3px);
+  align-items:center;justify-content:center;">
+  <div style="background:rgba(255,255,255,0.97);border-radius:24px;padding:32px 36px;
+    text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.25);max-width:300px;">
+    <div style="font-size:44px;margin-bottom:8px;">⏸️</div>
+    <div style="font-size:19px;font-weight:900;color:#312e81;margin-bottom:6px;">일시정지</div>
+    <div style="font-size:13px;color:#6366a0;margin-bottom:18px;">타이머가 멈춰있어요</div>
+    <button onclick="toggleTimerPause()" style="border:none;cursor:pointer;
+      background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;font-weight:800;
+      font-size:15px;padding:11px 28px;border-radius:14px;
+      box-shadow:0 4px 14px rgba(99,102,241,0.35);">▶️ 다시 시작</button>
+  </div>
+</div>
 
 <!-- 저작권 표시 -->
 <div id="copyrightBar" style="
