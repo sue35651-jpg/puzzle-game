@@ -44,6 +44,9 @@ body {
   color: var(--text);
   user-select:none; -webkit-user-select:none;
 }
+/* 색깔 이름표 끄기 — 카드매칭/클래식/순서맞추기(색선택) 전체에서 색상 위 텍스트 라벨을 일괄 숨김 */
+body.hide-color-labels .color-label-badge,
+body.hide-color-labels .seq-color-label { display:none !important; }
 
 /* ─── SCREENS ─── */
 .screen { display:none; width:100%; height:100vh; flex-direction:column; }
@@ -995,6 +998,9 @@ body.screen-shake {
   </div>
   <!-- 상단 버튼 -->
   <div class="top-bar">
+    <button class="ibtn" onclick="toggleColorLabels()" id="colorLabelBtn" title="색깔 이름 끄기">
+      <svg viewBox="0 0 24 24" id="colorLabelIco" fill="currentColor"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z"/></svg>
+    </button>
     <button class="ibtn" onclick="toggleMute()" id="muteBtn" title="소리 끄기">
       <svg viewBox="0 0 24 24" id="muteIco" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
     </button>
@@ -1209,6 +1215,20 @@ function toggleMute(){
 function sndClick()  { tone(900,'sine',0.1,0,0.28); tone(1200,'sine',0.07,0.04,0.12); }
 function sndPlace()  { [523,659,784,1047].forEach((f,i)=>tone(f,'sine',0.32,i*0.08,0.2)); }
 function sndDone()   { [523,659,784,1047,1319,1568].forEach((f,i)=>tone(f,'triangle',0.5,i*0.1,0.25)); setTimeout(()=>tone(2093,'sine',0.5,0,0.22),750); }
+
+// 색깔 이름표 켜기/끄기 — body 클래스 하나만 토글하면 CSS가 카드매칭/클래식/순서맞추기(색선택)
+// 전체에 걸쳐 렌더링된 모든 색 이름 라벨을 한 번에 숨기거나 보여줌 (렌더 함수 개별 수정 불필요)
+let colorLabelsHidden = false;
+function toggleColorLabels(){
+  colorLabelsHidden = !colorLabelsHidden;
+  document.body.classList.toggle('hide-color-labels', colorLabelsHidden);
+  const btn = document.getElementById('colorLabelBtn');
+  if (btn) {
+    btn.classList.toggle('on', colorLabelsHidden);
+    btn.title = colorLabelsHidden ? '색깔 이름 켜기' : '색깔 이름 끄기';
+  }
+  if (typeof scheduleSaveSettings === 'function') scheduleSaveSettings();
+}
 
 let nearOn=false, nearTmr=null;
 
@@ -2037,26 +2057,26 @@ const SVG = {
     </g>`,
 
   // ── COLORS ──
-  co_red:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#ef4444"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">빨강</text>',
-  co_orange: '<rect x="4" y="4" width="72" height="72" rx="10" fill="#f97316"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">주황</text>',
-  co_yellow: '<rect x="4" y="4" width="72" height="72" rx="10" fill="#eab308"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">노랑</text>',
-  co_green:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#22c55e"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">초록</text>',
-  co_blue:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#3b82f6"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">파랑</text>',
-  co_navy:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#4f46e5"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">남색</text>',
-  co_purple: '<rect x="4" y="4" width="72" height="72" rx="10" fill="#a855f7"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">보라</text>',
-  co_pink:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#ec4899"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">분홍</text>',
-  co_sky:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#06b6d4"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">하늘</text>',
-  co_brown:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#a16207"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">갈색</text>',
-  co_white:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="3"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">흰색</text>',
-  co_black:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#1e293b" stroke="#475569" stroke-width="3"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">검정</text>',
-  co_red2:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#dc2626"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="12" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">진빨강</text>',
-  co_lime:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#84cc16"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">연두</text>',
-  co_teal:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#14b8a6"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">청록</text>',
-  co_mint:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#6ee7b7"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">민트</text>',
-  co_coral:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#fb7185"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">코랄</text>',
-  co_gold:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#f59e0b"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">금색</text>',
-  co_violet:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#7c3aed"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="12" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">진보라</text>',
-  co_gray:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#6b7280"/><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">회색</text>',
+  co_red:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#ef4444"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">빨강</text></g>',
+  co_orange: '<rect x="4" y="4" width="72" height="72" rx="10" fill="#f97316"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">주황</text></g>',
+  co_yellow: '<rect x="4" y="4" width="72" height="72" rx="10" fill="#eab308"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">노랑</text></g>',
+  co_green:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#22c55e"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">초록</text></g>',
+  co_blue:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#3b82f6"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">파랑</text></g>',
+  co_navy:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#4f46e5"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">남색</text></g>',
+  co_purple: '<rect x="4" y="4" width="72" height="72" rx="10" fill="#a855f7"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">보라</text></g>',
+  co_pink:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#ec4899"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">분홍</text></g>',
+  co_sky:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#06b6d4"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">하늘</text></g>',
+  co_brown:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#a16207"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">갈색</text></g>',
+  co_white:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="3"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">흰색</text></g>',
+  co_black:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#1e293b" stroke="#475569" stroke-width="3"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">검정</text></g>',
+  co_red2:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#dc2626"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="12" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">진빨강</text></g>',
+  co_lime:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#84cc16"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">연두</text></g>',
+  co_teal:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#14b8a6"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">청록</text></g>',
+  co_mint:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#6ee7b7"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">민트</text></g>',
+  co_coral:   '<rect x="4" y="4" width="72" height="72" rx="10" fill="#fb7185"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">코랄</text></g>',
+  co_gold:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#f59e0b"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">금색</text></g>',
+  co_violet:  '<rect x="4" y="4" width="72" height="72" rx="10" fill="#7c3aed"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="12" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">진보라</text></g>',
+  co_gray:    '<rect x="4" y="4" width="72" height="72" rx="10" fill="#6b7280"/><g class="color-label-badge"><rect x="8" y="53" width="64" height="19" rx="7" fill="rgba(255,255,255,0.88)"/><text x="40" y="67" text-anchor="middle" font-size="13" font-weight="800" fill="#1e293b" font-family="Segoe UI,Apple SD Gothic Neo,Noto Sans KR,sans-serif">회색</text></g>',
 };
 
 // Puzzle item pools — 카드매칭: 유형별 고유 그림만, 클래식: 전체 사용
@@ -2697,14 +2717,15 @@ function makeSlotOutlineSVG(col, row, cellW, cellH, done=false) {
 </svg>`;
 }
 
-// 조각 수 n에 가장 가까운(가급적 정확히 일치하는) 직사각형 격자를 찾음
-// - 우선 n 그 자체의 약수 중 가로세로 비율이 너무 납작하지 않은(≤2.6) 조합을 찾고
+// 조각 수 n에 가장 가까운(가급적 정확히 일치하는) 정사각형에 가까운 격자를 찾음
+// - 우선 n 그 자체의 약수 중 가로세로 비율이 거의 정사각형인(≤1.3) 조합을 찾고
 // - 마땅한 조합이 없으면(소수 등) n을 최대 +8까지 늘려가며 재시도
-// 이렇게 하면 "1개" 요청 시 실제로 1조각, "2개"는 2조각처럼 요청한 개수가 최대한 정확히 반영됨
-// (예전 방식은 구간표 방식이라 1~3개를 요청해도 전부 4조각으로 나오는 문제가 있었음)
+// 이렇게 하면 "1개" 요청 시 실제로 1조각, "2개"는 2조각처럼 요청한 개수가 최대한 정확히 반영되면서도
+// 보드 전체 모양이 세로나 가로로 길쭉해지지 않고 항상 정사각형에 가깝게 유지됨
+// (비율 제한이 느슨했을 때는 조각 수에 따라 5×10, 7×13처럼 눈에 띄게 세로로 긴 보드가 나올 수 있었음)
 function calcClassicGrid(n) {
   n = Math.max(1, Math.min(100, Math.round(n)));
-  const MAX_RATIO = 2.6;
+  const MAX_RATIO = 1.3;
   for (let cand = n; cand <= n + 8; cand++) {
     let best = null, bestDiff = Infinity;
     for (let c = 1; c <= cand; c++) {
@@ -3740,6 +3761,20 @@ function initGameSession(){
 function updSeqSlider(){
   SEQ.count=parseInt(document.getElementById('sl-seq-count').value);
   document.getElementById('v-seq-count').textContent=SEQ.count+'개';
+  // 색선택 모드의 "색 종류 수"는 카드 개수보다 많을 수 없음(카드 없는 빈 구역이 생기므로) —
+  // 카드 개수가 바뀌면 색 종류 수 슬라이더의 최대치도 함께 갱신해서
+  // 슬라이더가 실제로 불가능한 값을 보여주지 않도록 함
+  syncSeqColorKindsMax();
+}
+function syncSeqColorKindsMax(){
+  const ckSlider=document.getElementById('sl-seq-color-kinds');
+  if(!ckSlider) return;
+  const maxAllowed=Math.max(1, Math.min(SEQ_COLORS.length, SEQ.count));
+  ckSlider.max=maxAllowed;
+  if(parseInt(ckSlider.value)>maxAllowed){
+    ckSlider.value=maxAllowed;
+    updSeqColorSlider();
+  }
 }
 function updSeqColorSlider(){
   SEQ.colorKinds=parseInt(document.getElementById('sl-seq-color-kinds').value);
@@ -3752,6 +3787,8 @@ function updateSeqUI(){
   document.getElementById('seq-color-rows').style.display=isColor?'block':'none';
   // 순서방향: 크기/높이/숫자 모두 표시, 색선택만 숨김
   document.getElementById('seq-dir-row').style.display=isColor?'none':'block';
+  // 색선택 화면으로 들어올 때도 현재 카드 개수 기준으로 최대치 동기화
+  if(isColor) syncSeqColorKindsMax();
 }
 
 // 정답확인 통합 함수
@@ -3923,8 +3960,9 @@ function renderSeqColorProblem(colSz){
     el.dataset.colorKey=item.value;
     el.dataset.colorIdx=item.colorIdx;
     el.style.cssText=`width:${colSz}px;height:${colSz}px;background:${item.color.fill};border-color:transparent;border-radius:14px;box-shadow:0 3px 12px rgba(0,0,0,0.12);position:relative;display:flex;align-items:flex-end;justify-content:center;`;
-    // 색맹 학생을 위한 색 이름 라벨 — 색 인지 없이도 텍스트로 구분 가능하도록
+    // 색맹 학생을 위한 색 이름 라벨 — 색 인지 없이도 텍스트로 구분 가능하도록 (토글 가능)
     const lbl=document.createElement('div');
+    lbl.className='seq-color-label';
     lbl.style.cssText=`background:rgba(255,255,255,0.88);color:#1e293b;font-weight:800;
       font-size:${Math.max(10,Math.round(colSz*0.14))}px;border-radius:7px 7px 12px 12px;
       padding:2px 8px;margin-bottom:5px;pointer-events:none;`;
@@ -3959,11 +3997,11 @@ function renderSeqColorProblem(colSz){
       background:${color.fill}18;
       transition:background 0.2s,border-color 0.2s;
     `;
-    // 색 레이블
+    // 색 레이블 — 스와치 아이콘은 항상 유지(구역의 색 표시 자체이므로), 글자만 토글 가능
     const lbl=document.createElement('div');
     lbl.style.cssText=`font-size:13px;font-weight:800;color:${color.fill};
       display:flex;align-items:center;gap:4px;flex-shrink:0;`;
-    lbl.innerHTML=`<span style="display:inline-block;width:16px;height:16px;border-radius:4px;background:${color.fill};"></span>${color.lbl}`;
+    lbl.innerHTML=`<span style="display:inline-block;width:16px;height:16px;border-radius:4px;background:${color.fill};"></span><span class="seq-color-label">${color.lbl}</span>`;
     zone.appendChild(lbl);
     // 카드 담는 영역
     const cards=document.createElement('div');
@@ -4533,7 +4571,7 @@ function seqColorDragStart(e){
         background:${fill};flex-shrink:0;cursor:grab;position:relative;
         display:flex;align-items:flex-end;justify-content:center;
         box-shadow:0 3px 10px rgba(0,0,0,0.15);`;
-      card.innerHTML=`<div style="background:rgba(255,255,255,0.88);color:#1e293b;
+      card.innerHTML=`<div class="seq-color-label" style="background:rgba(255,255,255,0.88);color:#1e293b;
         font-weight:800;font-size:${Math.max(9,Math.round(colSz*0.13))}px;
         border-radius:6px 6px 10px 10px;padding:1px 6px;margin-bottom:3px;
         pointer-events:none;">${colorLbl}</div>`;
@@ -4621,7 +4659,7 @@ function seqColorCardDragStart(e){
         background:${fill};flex-shrink:0;cursor:grab;position:relative;
         display:flex;align-items:flex-end;justify-content:center;
         box-shadow:0 3px 10px rgba(0,0,0,0.15);`;
-      newCard.innerHTML=`<div style="background:rgba(255,255,255,0.88);color:#1e293b;
+      newCard.innerHTML=`<div class="seq-color-label" style="background:rgba(255,255,255,0.88);color:#1e293b;
         font-weight:800;font-size:${Math.max(9,Math.round(colSz*0.13))}px;
         border-radius:6px 6px 10px 10px;padding:1px 6px;margin-bottom:3px;
         pointer-events:none;">${colorLbl2}</div>`;
@@ -5025,6 +5063,7 @@ function saveSettings(){
       quizMode: QUIZ.mode, quizGoal: QUIZ.goal,
       taOn: TA.on, taMinutes: TA.minutes,
       muted: soundMuted,
+      colorLabelsHidden: colorLabelsHidden,
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(data));
   } catch(e){ /* 프라이빗 브라우징 등으로 저장 불가 시 조용히 무시 */ }
@@ -5093,6 +5132,8 @@ function loadSettings(){
     if(typeof saved.taMinutes==='number') selTimeLimit(saved.taMinutes);
     // 7) 소리 끄기 상태
     if(saved.muted===true) toggleMute();
+    // 8) 색깔 이름표 표시 여부
+    if(saved.colorLabelsHidden===true) toggleColorLabels();
   } catch(e){ /* 저장된 값이 손상됐어도 앱이 죽지 않도록 방어 */ }
 }
 
